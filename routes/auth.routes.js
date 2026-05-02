@@ -13,8 +13,8 @@ authRouter.post("/login", login)
 authRouter.post("/logout", logOut)
 
 
-authRouter.get("/me", isAuth, (req, res) => {
-  res.json({ message: "User is authenticated", userId: req.userId })
-})
+// authRouter.get("/me", isAuth, (req, res) => {
+//   res.json({ message: "User is authenticated", userId: req.userId })
+// })
 
 export default authRouter
