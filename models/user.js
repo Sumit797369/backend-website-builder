@@ -1,30 +1,43 @@
 import mongoose from "mongoose";
 
+const userSchema = new mongoose.Schema({
+  name: {
+    type: String,
+  },
 
-const userSchema= new mongoose.Schema({
-name:{
-    type:String,
-     unique:true
-},
-email:{
-     type:String,
-     unique:true,
-     required:true
-},
-avatar:{
-    type:String
-},
-credits:{
-    type:Number,
-    default:100,
-    min:0
-},
-plan:{
-    type:String,
-    enum:["free","pro","enterprise"],
-    default:"free"
-}
-},{timestamps:true})
+  email: {
+    type: String,
+    unique: true,
+    required: true,
+  },
 
-const User=mongoose.model("User",userSchema)
-export default User
+  password: {
+    type: String,
+    default: null, // Google login ke liye empty rahega
+  },
+
+  avatar: {
+    type: String,
+  },
+
+  provider: {
+    type: String,
+    enum: ["google", "local"],
+    default: "local",
+  },
+
+  credits: {
+    type: Number,
+    default: 100,
+    min: 0,
+  },
+
+  plan: {
+    type: String,
+    enum: ["free", "pro", "enterprise"],
+    default: "free",
+  },
+}, { timestamps: true });
+
+const User = mongoose.model("User", userSchema);
+export default User;
