@@ -10,7 +10,7 @@ authRouter.post("/google", googleAuth)
 
 authRouter.post("/register", register)
 authRouter.post("/login", login)
-authRouter.post("/logout", logOut)
+authRouter.get("/logout", logOut)
 
 
 // authRouter.get("/me", isAuth, (req, res) => {
