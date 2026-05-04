@@ -16,7 +16,7 @@ app.use(cors({
 }))
 
 app.use("/api/auth",authRouter)
-app.use("/api/auth",userRouter)
+app.use("/api/user",userRouter)
 
 app.listen(port,()=>{
     console.log("server started");
