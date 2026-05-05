@@ -21,4 +21,11 @@ const generateResponse = async (prompt) => {
       temperature:0.2
     }),
   });
+  if (!res.ok) {
+    const err = await res.text()
+    throw new Error("openRouter err" + err)
+    
+  }
+  const data = await rees.json()
+  return data
 };
