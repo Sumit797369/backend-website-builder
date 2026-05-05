@@ -210,6 +210,7 @@ export const generteWebsite=async(req,res)=>{
         }
         const finalPrompt=masterPrompt.replace("USER_PROMPT",prompt)
         let raw= ""
+        
         raw= await generateResponse(finalPrompt)
     } catch (error) {
         
