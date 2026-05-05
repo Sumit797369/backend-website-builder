@@ -18,6 +18,7 @@ const generateResponse = async (prompt) => {
           content: prompt,
         },
       ],
+      temperature:0.2
     }),
   });
 };
