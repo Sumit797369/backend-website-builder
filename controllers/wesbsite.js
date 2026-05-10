@@ -1,3 +1,8 @@
+// import{generateResponse} from "../config/openRouter.js";
+import User from "../models/user.js";
+import Website from "../models/website.js";
+// import {extractJson} from "../utils/extractJson.js"
+
 const masterPrompt = `
 YOU ARE A WORLD-CLASS SOFTWARE ARCHITECT,
 PRINCIPAL FULL-STACK ENGINEER,
@@ -204,16 +209,54 @@ export const generteWebsite=async(req,res)=>{
         if(!prompt){
             return res.status(400).json({message:"Prompt is required"})
         }
-        const user =req.userId
+        const user =await User.findById(req.user._id)
         if (!user) {
             return res.status(400).json({message:"user not found"})
         }
+        if (user.credits<50) {
+          return res.status(400).json({message:"You have not engough credits to generate a website"})
+        }
         const finalPrompt=masterPrompt.replace("USER_PROMPT",prompt)
         let raw= ""
-        
-        raw= await generateResponse(finalPrompt)
+        let parsed = null
+        for (let i = 0; i < 2 && !parsed ; i++) {
+          raw = await generateResponse(finalPrompt)
+          parsed=await extractJson(raw)
+          if (!parsed) {
+            raw = await generateResponse(finalPrompt + "\n\nRETURN ONLY RAW JSON")
+            parsed=await extractJson(raw)
+          }
+          
+        }
+        if (!parsed.code) {
+          console.log("ai returned invalid response",raw);
+          return res.status(400).json({message:"ai returned invalid response"})
+          
+        }
+        const website = await Website.create({
+          user:user._id,
+          title:prompt.slice(0,60),
+          latesCode:parsed.code,
+          conversation:[
+            {
+              role:"ai",
+              content:parsed.message
+            },
+            {
+              role:"user",
+              content:prompt
+            }
+          ]
+        })
+        user.credits = user.credits-50
+        await user.save()
+        return res.status(201).json({
+          websiteId:website>id,
+          remainingCredits:user.credits
+        })
+        // raw= await generateResponse(finalPrompt)
     } catch (error) {
-        
+        return res.status(500).json({message:`generate website error`})
     }
 
 }

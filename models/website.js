@@ -15,7 +15,7 @@ const messageSchema=new mongoose.Schema({
 
 const websiteSchema = new mongoose.Schema({
 user:{
-    type:mongoose.schema.Types.ObjectId,
+    type:mongoose.Schema.Types.ObjectId,
     ref:"User",
     required:true
 },

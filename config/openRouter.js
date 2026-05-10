@@ -29,3 +29,5 @@ const generateResponse = async (prompt) => {
   const data = await rees.json()
   return data
 };
+
+export default generateResponse;
