@@ -1,7 +1,7 @@
-// import{generateResponse} from "../config/openRouter.js";
+import generateResponse from "../config/openRouter.js";
 import User from "../models/user.js";
 import Website from "../models/website.js";
-// import {extractJson} from "../utils/extractJson.js"
+import extractJson from "../utils/extractJson.js";
 
 const masterPrompt = `
 YOU ARE A WORLD-CLASS SOFTWARE ARCHITECT,
@@ -209,7 +209,7 @@ export const generteWebsite=async(req,res)=>{
         if(!prompt){
             return res.status(400).json({message:"Prompt is required"})
         }
-        const user =await User.findById(req.user._id)
+        const user = await User.findById(req.userId);
         if (!user) {
             return res.status(400).json({message:"user not found"})
         }
@@ -221,14 +221,23 @@ export const generteWebsite=async(req,res)=>{
         let parsed = null
         for (let i = 0; i < 2 && !parsed ; i++) {
           raw = await generateResponse(finalPrompt)
-          parsed=await extractJson(raw)
+          try {
+            parsed=await extractJson(raw)
+          } catch (e) {
+            console.error("JSON parse error:", e.message);
+            parsed = null;
+          }
           if (!parsed) {
             raw = await generateResponse(finalPrompt + "\n\nRETURN ONLY RAW JSON")
-            parsed=await extractJson(raw)
+            try {
+              parsed=await extractJson(raw)
+            } catch (e) {
+              console.error("JSON parse error fallback:", e.message);
+              parsed = null;
+            }
           }
-          
         }
-        if (!parsed.code) {
+        if (!parsed || !parsed.files) {
           console.log("ai returned invalid response",raw);
           return res.status(400).json({message:"ai returned invalid response"})
           
@@ -236,11 +245,12 @@ export const generteWebsite=async(req,res)=>{
         const website = await Website.create({
           user:user._id,
           title:prompt.slice(0,60),
-          latesCode:parsed.code,
+          slug: Date.now().toString(36) + Math.random().toString(36).substring(2, 7),
+          latesCode: JSON.stringify(parsed),
           conversation:[
             {
               role:"ai",
-              content:parsed.message
+              content: parsed.message || "Here is your website."
             },
             {
               role:"user",
@@ -251,12 +261,14 @@ export const generteWebsite=async(req,res)=>{
         user.credits = user.credits-50
         await user.save()
         return res.status(201).json({
-          websiteId:website>id,
-          remainingCredits:user.credits
-        })
+          websiteId: website._id,
+          remainingCredits: user.credits,
+          latesCode: parsed
+        });
         // raw= await generateResponse(finalPrompt)
     } catch (error) {
-        return res.status(500).json({message:`generate website error`})
+        console.error("Generate website error:", error);
+        return res.status(500).json({message: error.message || `generate website error`})
     }
 
 }

@@ -20,8 +20,10 @@ app.use("/api/auth",authRouter)
 app.use("/api/user",userRouter)
 app.use("/api/website",websiteRouter)
 
-app.listen(port,()=>{
-    console.log("server started");
-    connectDB()
-    
-})
+connectDB().then(() => {
+    app.listen(port, () => {
+        console.log("server started on port " + port);
+    });
+}).catch(err => {
+    console.error("Failed to connect to DB", err);
+});
