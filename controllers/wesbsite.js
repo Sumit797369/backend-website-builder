@@ -1,208 +1,95 @@
-import generateResponse from "../config/openRouter.js";
+import generateResponse from "../config/groq.js";
 import User from "../models/user.js";
 import Website from "../models/website.js";
 import extractJson from "../utils/extractJson.js";
 
 const masterPrompt = `
-YOU ARE A WORLD-CLASS SOFTWARE ARCHITECT,
-PRINCIPAL FULL-STACK ENGINEER,
-AND ELITE UI/UX DESIGNER.
+YOU ARE AN EXPERT FRONTEND WEB DEVELOPER AND UI/UX DESIGNER.
 
-YOU BUILD REAL-WORLD, PRODUCTION-GRADE,
-CLIENT-DELIVERABLE APPLICATIONS.
+YOUR TASK IS TO GENERATE A COMPLETE, FULLY FUNCTIONAL, AND MODERN WEBSITE BASED ON THE USER PROMPT.
 
-YOU CAN BUILD:
+---
 
-- Frontend websites
-- Full-stack web applications
-- SaaS platforms
-- Dashboards
-- AI tools
-- E-commerce apps
-- Portfolios
-- Landing pages
-- Admin panels
-- Backend APIs
-- Automation tools
-- Python applications
-
---------------------------------------------------
 USER REQUIREMENT:
 {USER_PROMPT}
---------------------------------------------------
+-------------
 
-TECH STACK INTELLIGENCE (VERY IMPORTANT)
---------------------------------------------------
+TECH STACK:
 
-IF THE USER SPECIFIES A TECH STACK:
-- STRICTLY USE THAT STACK
+* HTML
+* CSS
+* Vanilla JavaScript
 
-EXAMPLES:
-- "React website" → Use React
-- "Next.js SaaS" → Use Next.js
-- "MERN app" → MongoDB + Express + React + Node
-- "PERN stack" → PostgreSQL + Express + React + Node
-- "TypeScript dashboard" → TypeScript
-- "Java full stack" → Java backend + suitable frontend
-- "Python web app" → Python stack
-- "Django app" → Django
-- "Flask API" → Flask
-- "FastAPI backend" → FastAPI
-- "AI app in Python" → Python ecosystem
+IMPORTANT RULES:
 
-IF THE USER DOES NOT SPECIFY A STACK:
-AUTOMATICALLY CHOOSE THE BEST MODERN STACK
-BASED ON THE PROJECT TYPE.
+1. Generate FULLY WORKING websites
+2. Include COMPLETE functionality and logic
+3. Do NOT generate placeholder UI
+4. Do NOT leave unfinished code
+5. Ensure buttons, inputs, forms, and features work correctly
+6. Use responsive modern design
+7. Use clean CSS styling
+8. Keep code concise but functional
+9. Do NOT use React
+10. Do NOT use Tailwind
+11. Do NOT use external libraries
+12. Do NOT use npm packages
+13. Do NOT use imports or exports
+14. Everything must work directly in browser preview
+15. Prevent blank screens and JavaScript errors
 
-STACK SELECTION RULES:
-- Simple landing page → HTML/CSS/JS
-- Interactive frontend app → React
-- SEO/business website → Next.js
-- SaaS/dashboard → Next.js + TypeScript
-- AI tools → Python + FastAPI
-- Enterprise apps → Java/Spring Boot
-- Full-stack apps → MERN / PERN / Next.js full stack
-- Data-heavy apps → Python backend if suitable
+IF USER ASKS:
 
---------------------------------------------------
-GLOBAL QUALITY BAR (NON-NEGOTIABLE)
---------------------------------------------------
-- Modern 2026–2027 UI/UX
-- Premium responsive design
-- Production-grade architecture
-- Clean scalable code
-- Realistic business-ready content
-- Reusable components
-- Proper state management
-- Mobile-first responsive design
-- Smooth transitions & animations
-- Accessible UI practices
-- Optimized performance
+* Calculator → create fully working calculator
+* Todo App → create working todo app
+* Portfolio → create complete portfolio website
+* Landing Page → create modern responsive landing page
 
---------------------------------------------------
-RESPONSIVE DESIGN (MANDATORY)
---------------------------------------------------
-THE APPLICATION MUST WORK PERFECTLY ON:
+---
 
-✔ Mobile
-✔ Tablet
-✔ Desktop
+## JSON OUTPUT FORMAT ONLY
 
-IMPLEMENT:
-- Responsive layouts
-- Grid/Flexbox
-- Media queries
-- Adaptive typography
-- Touch-friendly UI
-- Proper spacing
-- No horizontal scrolling
+RETURN ONLY VALID RAW JSON.
 
---------------------------------------------------
-IMAGES
---------------------------------------------------
-- Use high-quality images from:
-https://images.unsplash.com/
+DO NOT:
 
-- Images must be responsive
-- No broken image links
+* use markdown
+* use \`\`\`json
+* add explanations
+* add comments
+* add extra text
 
---------------------------------------------------
-TECHNICAL REQUIREMENTS
---------------------------------------------------
+Response format:
 
-FOR ALL PROJECTS:
-- Generate COMPLETE production-ready code
-- No pseudo code
-- No placeholders
-- No incomplete functions
-- No dead UI
-- Functional navigation
-- Functional forms
-- Proper validation
-- Clean readable code
-- Proper folder structure
-- Real-world architecture
-
---------------------------------------------------
-FULL-STACK REQUIREMENTS
---------------------------------------------------
-IF BACKEND IS REQUIRED:
-
-INCLUDE:
-- API routes
-- Authentication flow if needed
-- Database schema/models
-- CRUD operations
-- Error handling
-- Environment variables
-- Frontend/backend integration
-
-SUPPORTED BACKEND STACKS:
-- Node.js
-- Express.js
-- Next.js API routes
-- Python Flask
-- Python Django
-- Python FastAPI
-- Java Spring Boot
-
-SUPPORTED DATABASES:
-- MongoDB
-- PostgreSQL
-- MySQL
-- SQLite
-
---------------------------------------------------
-PYTHON PROJECT RULES
---------------------------------------------------
-IF USING PYTHON:
-- Use proper virtual environment structure
-- Include requirements.txt
-- Use scalable architecture
-- Proper API structure
-- Proper dependency management
-- Use modern Python practices
-- Include backend startup instructions in comments if needed
-
---------------------------------------------------
-OUTPUT RULES
---------------------------------------------------
-RETURN RAW JSON ONLY.
-
-NO MARKDOWN.
-NO EXPLANATIONS.
-NO EXTRA TEXT.
-
---------------------------------------------------
-OUTPUT FORMAT
---------------------------------------------------
 {
-  "message": "Short professional confirmation",
-  "techStack": {
-    "frontend": "",
-    "backend": "",
-    "database": ""
-  },
-  "files": [
-    {
-      "path": "example/file/path",
-      "content": "FULL FILE CONTENT"
-    }
-  ]
+"message": "short message",
+"files": [
+{
+"path": "index.html",
+"content": "full html code"
+},
+{
+"path": "style.css",
+"content": "full css code"
+},
+{
+"path": "script.js",
+"content": "full javascript code"
+}
+]
 }
 
---------------------------------------------------
-ABSOLUTE RULES
---------------------------------------------------
-- RESPONSE MUST BE VALID JSON
-- DO NOT WRAP IN MARKDOWN
-- GENERATE COMPLETE CODEBASE
-- INCLUDE ALL FILES
-- NO TRUNCATED CODE
-- NO PLACEHOLDERS
-- APPLICATION MUST BE PRODUCTION-READY
-"
-`
+ABSOLUTE RULES:
+
+* RESPONSE MUST BE VALID JSON ONLY
+* ENSURE JSON.parse() WORKS
+* ALL WEBSITE FEATURES MUST WORK
+* GENERATE COMPLETE HTML/CSS/JS CODE
+* AVOID JAVASCRIPT ERRORS
+* ENSURE RESPONSIVE DESIGN
+* NO EMPTY FILES
+* NO PLACEHOLDER CONTENT
+`;
 export const generteWebsite=async(req,res)=>{
     try {
         const {prompt} = req.body
@@ -213,8 +100,8 @@ export const generteWebsite=async(req,res)=>{
         if (!user) {
             return res.status(400).json({message:"user not found"})
         }
-        if (user.credits<50) {
-          return res.status(400).json({message:"You have not engough credits to generate a website"})
+        if (user.credits<10) {
+          return res.status(400).json({message:"You do not have enough credits"})
         }
         const finalPrompt=masterPrompt.replace("USER_PROMPT",prompt)
         let raw= ""
@@ -258,7 +145,7 @@ export const generteWebsite=async(req,res)=>{
             }
           ]
         })
-        user.credits = user.credits-50
+        user.credits = user.credits - 10;
         await user.save()
         return res.status(201).json({
           websiteId: website._id,
@@ -271,4 +158,45 @@ export const generteWebsite=async(req,res)=>{
         return res.status(500).json({message: error.message || `generate website error`})
     }
 
+}
+
+export const deployWebsite = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const website = await Website.findOne({ _id: id, user: req.userId });
+        
+        if (!website) {
+            return res.status(404).json({ message: "Website not found" });
+        }
+
+        website.deployed = true;
+        // In a real app, this would use the Vercel or Netlify API.
+        // For now, we simulate deployment by providing a shareable live link based on the slug.
+        website.deployUrl = `http://localhost:5173/preview/${website.slug}`;
+        await website.save();
+
+        return res.status(200).json({ 
+            message: "Website deployed successfully",
+            url: website.deployUrl
+        });
+    } catch (error) {
+        console.error("Deploy error:", error);
+        return res.status(500).json({ message: "Failed to deploy website" });
+    }
+}
+
+export const getWebsiteBySlug = async (req, res) => {
+    try {
+        const { slug } = req.params;
+        const website = await Website.findOne({ slug });
+        
+        if (!website) {
+            return res.status(404).json({ message: "Website not found" });
+        }
+
+        return res.status(200).json(website);
+    } catch (error) {
+        console.error("Fetch website error:", error);
+        return res.status(500).json({ message: "Failed to fetch website" });
+    }
 }
