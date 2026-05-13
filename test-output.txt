@@ -1,0 +1,46 @@
+{
+  "operations": [
+       {
+           "name": "addition",
+           "operator": "+",
+           "function": "add"
+       },
+       {
+           "name": "subtraction",
+           "operator": "-",
+           "function": "subtract"
+       },
+       {
+           "name": "multiplication",
+           "operator": "*",
+           "function": "multiply"
+       },
+       {
+           "name": "division",
+           "operator": "/",
+           "function": "divide"
+       }
+   ],
+   "functions": {
+       "add": {
+           "description": "adds two numbers",
+           "parameters": ["num1", "num2"],
+           "returns": "result"
+       },
+       "subtract": {
+           "description": "subtracts one number from another",
+           "parameters": ["num1", "num2"],
+           "returns": "result"
+       },
+       "multiply": {
+           "description": "multiplies two numbers",
+           "parameters": ["num1", "num2"],
+           "returns": "result"
+       },
+       "divide": {
+           "description": "divides one number by another",
+           "parameters": ["num1", "num2"],
+           "returns": "result"
+       }
+   }
+}
