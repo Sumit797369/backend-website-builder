@@ -41,92 +41,132 @@ TECHNICAL: One HTML file, inline <style> and <script>, no external resources, sy
 OUTPUT: Return ONLY raw JSON, no markdown:
 {"message":"brief description","code":"<COMPLETE HTML>"}`;
 
-export const generteWebsite=async(req,res)=>{
+export const generteWebsite = async (req, res) => {
     try {
-        const {prompt} = req.body
-        if(!prompt){
-            return res.status(400).json({message:"Prompt is required"})
+        const { prompt, websiteId } = req.body;
+        if (!prompt) {
+            return res.status(400).json({ message: "Prompt is required" });
         }
+
         const user = await User.findById(req.userId);
         if (!user) {
-            return res.status(400).json({message:"user not found"})
+            return res.status(400).json({ message: "user not found" });
         }
-        if (user.credits<10) {
-          return res.status(400).json({message:"You do not have enough credits"})
+
+        if (user.credits < 5) { // Lower cost for updates? Or keep 10? Let's keep 10 for now.
+            return res.status(400).json({ message: "You do not have enough credits" });
         }
-        const finalPrompt=masterPrompt.replace("USER_PROMPT",prompt)
-        let raw= ""
-        let parsed = null
-        for (let i = 0; i < 2 && !parsed ; i++) {
-          raw = await generateResponse(finalPrompt)
-          try {
-            parsed=await extractJson(raw)
-          } catch (e) {
-            console.error("JSON parse error:", e.message);
-            parsed = null;
-          }
-          if (!parsed) {
-            raw = await generateResponse(finalPrompt + "\n\nRETURN ONLY RAW JSON")
+
+        let finalPrompt = "";
+        let existingWebsite = null;
+
+        if (websiteId) {
+            existingWebsite = await Website.findOne({ _id: websiteId, user: user._id });
+            if (!existingWebsite) {
+                return res.status(404).json({ message: "Website not found" });
+            }
+
+            const currentCode = JSON.parse(existingWebsite.latesCode).code;
+            finalPrompt = `${masterPrompt}\n\nCURRENT WEBSITE CODE:\n${currentCode}\n\nUSER REQUEST FOR UPDATE: ${prompt}\n\nIMPORTANT: Modify the existing code according to the request. Preserve existing style and structure unless requested otherwise. Return ONLY the complete updated HTML in the JSON "code" field.`;
+        } else {
+            finalPrompt = masterPrompt.replace("{USER_PROMPT}", prompt);
+        }
+
+        let raw = "";
+        let parsed = null;
+        for (let i = 0; i < 2 && !parsed; i++) {
+            raw = await generateResponse(finalPrompt);
             try {
-              parsed=await extractJson(raw)
+                parsed = await extractJson(raw);
             } catch (e) {
-              console.error("JSON parse error fallback:", e.message);
-              parsed = null;
+                console.error("JSON parse error:", e.message);
+                parsed = null;
             }
-          }
+            if (!parsed) {
+                raw = await generateResponse(finalPrompt + "\n\nRETURN ONLY RAW JSON");
+                try {
+                    parsed = await extractJson(raw);
+                } catch (e) {
+                    console.error("JSON parse error fallback:", e.message);
+                    parsed = null;
+                }
+            }
         }
+
         if (!parsed || !parsed.code) {
-          console.log("ai returned invalid response",raw);
-          return res.status(400).json({message:"ai returned invalid response"})
-          
+            console.log("ai returned invalid response", raw);
+            return res.status(400).json({ message: "ai returned invalid response" });
         }
-        const website = await Website.create({
-          user:user._id,
-          title:prompt.slice(0,60),
-          slug: Date.now().toString(36) + Math.random().toString(36).substring(2, 7),
-          latesCode: JSON.stringify(parsed),
-          conversation:[
-            {
-              role:"ai",
-              content: parsed.message || "Here is your website."
-            },
-            {
-              role:"user",
-              content:prompt
-            }
-          ]
-        })
+
+        let website;
+        if (existingWebsite) {
+            existingWebsite.latesCode = JSON.stringify(parsed);
+            existingWebsite.conversation.push(
+                { role: "user", content: prompt },
+                { role: "ai", content: parsed.message || "I've updated the website for you." }
+            );
+            website = await existingWebsite.save();
+        } else {
+            website = await Website.create({
+                user: user._id,
+                title: prompt.slice(0, 60),
+                slug: Date.now().toString(36) + Math.random().toString(36).substring(2, 7),
+                latesCode: JSON.stringify(parsed),
+                conversation: [
+                    {
+                        role: "user",
+                        content: prompt
+                    },
+                    {
+                        role: "ai",
+                        content: parsed.message || "Here is your website."
+                    }
+                ]
+            });
+        }
+
         user.credits = user.credits - 10;
-        await user.save()
+        await user.save();
+
         return res.status(201).json({
-          websiteId: website._id,
-          remainingCredits: user.credits,
-          latesCode: parsed
+            websiteId: website._id,
+            remainingCredits: user.credits,
+            latesCode: parsed,
+            conversation: website.conversation
         });
-        // raw= await generateResponse(finalPrompt)
     } catch (error) {
         console.error("Generate website error:", error);
-        return res.status(500).json({message: error.message || `generate website error`})
+        return res.status(500).json({ message: error.message || `generate website error` });
     }
+}
 
+export const fetchWebsiteById = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const website = await Website.findOne({ _id: id, user: req.userId });
+        if (!website) {
+            return res.status(404).json({ message: "Website not found" });
+        }
+        return res.status(200).json(website);
+    } catch (error) {
+        return res.status(500).json({ message: "Error fetching website" });
+    }
 }
 
 export const deployWebsite = async (req, res) => {
     try {
         const { id } = req.params;
         const website = await Website.findOne({ _id: id, user: req.userId });
-        
+
         if (!website) {
             return res.status(404).json({ message: "Website not found" });
         }
 
         website.deployed = true;
-        // In a real app, this would use the Vercel or Netlify API.
-        // For now, we simulate deployment by providing a shareable live link based on the slug.
         website.deployUrl = `http://localhost:5173/preview/${website.slug}`;
         await website.save();
 
-        return res.status(200).json({ 
+        return res.status(200).json({
             message: "Website deployed successfully",
             url: website.deployUrl
         });
@@ -140,7 +180,7 @@ export const getWebsiteBySlug = async (req, res) => {
     try {
         const { slug } = req.params;
         const website = await Website.findOne({ slug });
-        
+
         if (!website) {
             return res.status(404).json({ message: "Website not found" });
         }
